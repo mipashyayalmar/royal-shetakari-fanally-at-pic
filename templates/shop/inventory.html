@@ -1,0 +1,580 @@
+{% extends 'shop/basic.html' %}
+{% block title %} Inventory - Drinks {% endblock %}
+{% load static %}
+
+{% block body %}
+<style>
+    /* Modern CSS Variables */
+    :root {
+        --primary-color: #2563eb;
+        --secondary-color: #1e40af;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --dark-color: #1f2937;
+        --light-color: #f8fafc;
+        --border-color: #e5e7eb;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --animation-speed: 0.3s;
+    }
+
+    /* Global Styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+    }
+
+    /* Container */
+    .inventory-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        animation: slideInUp 0.6s ease-out;
+    }
+
+    /* Header */
+    .inventory-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .inventory-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 10s linear infinite;
+    }
+
+    .inventory-header h2 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Messages */
+    .messages-container {
+        padding: 20px 30px;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border: none;
+        animation: fadeInDown 0.5s ease-out;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .alert::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, var(--success-color), #059669);
+        color: white;
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, var(--warning-color), #d97706);
+        color: white;
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, var(--danger-color), #dc2626);
+        color: white;
+    }
+
+    /* Table Container */
+    .table-container {
+        padding: 0 30px 30px;
+        overflow-x: auto;
+    }
+
+    /* Modern Table */
+    .inventory-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .inventory-table th {
+        background: linear-gradient(135deg, var(--dark-color), #374151);
+        color: white;
+        padding: 20px 15px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        position: relative;
+    }
+
+    .inventory-table th::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+
+    .inventory-table td {
+        padding: 18px 15px;
+        border-bottom: 1px solid var(--border-color);
+        transition: all var(--animation-speed) ease;
+        position: relative;
+    }
+
+    .inventory-table tbody tr {
+        transition: all var(--animation-speed) ease;
+        animation: fadeInUp 0.6s ease-out;
+        animation-fill-mode: both;
+    }
+
+    .inventory-table tbody tr:nth-child(even) {
+        background-color: #f9fafb;
+    }
+
+    .inventory-table tbody tr:hover {
+        background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Low Stock Styling */
+    .low-stock {
+        background: linear-gradient(135deg, #fef2f2, #fee2e2) !important;
+        border-left: 4px solid var(--danger-color);
+        animation: pulse 2s infinite;
+    }
+
+    .low-stock td {
+        font-weight: 600;
+        color: var(--danger-color);
+    }
+
+    /* Product Image */
+    .product-image {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 10px;
+        transition: transform var(--animation-speed) ease;
+        box-shadow: var(--shadow);
+    }
+
+    .product-image:hover {
+        transform: scale(1.1);
+    }
+
+    /* Price Styling */
+    .price {
+        font-weight: 700;
+        color: var(--success-color);
+        font-size: 1.1rem;
+    }
+
+    /* Stock Indicators */
+    .stock-indicator {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        min-width: 60px;
+    }
+
+    .stock-high {
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        color: #166534;
+    }
+
+    .stock-medium {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        color: #92400e;
+    }
+
+    .stock-low {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        color: #991b1b;
+        animation: pulse 1.5s infinite;
+    }
+
+    /* Notification Modal */
+    .notification-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .notification-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+        animation: slideInUp 0.4s ease-out;
+    }
+
+    .notification-content h3 {
+        color: var(--danger-color);
+        margin-top: 0;
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+    }
+
+    .notification-content ul {
+        text-align: left;
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+    }
+
+    .notification-content li {
+        margin: 10px 0;
+        color: var(--dark-color);
+    }
+
+    .btn-close {
+        background: linear-gradient(135deg, var(--danger-color), #dc2626);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--animation-speed) ease;
+        box-shadow: var(--shadow);
+    }
+
+    .btn-close:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Permission Popup */
+    .popup-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .popup-content {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        animation: slideInUp 0.4s ease-out;
+    }
+
+    .popup-content p {
+        font-size: 1.2rem;
+        color: var(--dark-color);
+        margin-bottom: 30px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .inventory-header h2 {
+            font-size: 2rem;
+        }
+        
+        .inventory-table th,
+        .inventory-table td {
+            padding: 12px 8px;
+            font-size: 0.9rem;
+        }
+        
+        .product-image {
+            width: 40px;
+            height: 40px;
+        }
+    }
+
+    /* Staggered Animation for Table Rows */
+    .inventory-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
+    .inventory-table tbody tr:nth-child(2) { animation-delay: 0.2s; }
+    .inventory-table tbody tr:nth-child(3) { animation-delay: 0.3s; }
+    .inventory-table tbody tr:nth-child(4) { animation-delay: 0.4s; }
+    .inventory-table tbody tr:nth-child(5) { animation-delay: 0.5s; }
+    .inventory-table tbody tr:nth-child(n+6) { animation-delay: 0.6s; }
+</style>
+
+{% if user.last_name == 'admin' %}
+<div class="inventory-container">
+    <div class="inventory-header">
+        <h2><i class="fas fa-boxes"></i> Drinks Inventory</h2>
+    </div>
+    
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                <i class="fas fa-info-circle"></i> {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="table-container">
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-tag"></i> Product Name</th>
+                    <th><i class="fas fa-layer-group"></i> Subcategory</th>
+                    <th><i class="fas fa-rupee-sign"></i> Price</th>
+                    <th><i class="fas fa-cubes"></i> Stock</th>
+                    <th><i class="fas fa-exclamation-triangle"></i> Threshold</th>
+                    <th><i class="fas fa-image"></i> Image</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for drink in drinks %}
+                <tr {% if drink.stock_quantity <= drink.low_stock_threshold %}class="low-stock"{% endif %}>
+                    <td><strong>{{ drink.product_name }}</strong></td>
+                    <td>{{ drink.subcategory }}</td>
+                    <td><span class="price">₹{{ drink.price }}</span></td>
+                    <td>
+                        <span class="stock-indicator 
+                            {% if drink.stock_quantity <= drink.low_stock_threshold %}stock-low
+                            {% elif drink.stock_quantity <= drink.low_stock_threshold|add:10 %}stock-medium
+                            {% else %}stock-high{% endif %}">
+                            {{ drink.stock_quantity }}
+                        </span>
+                    </td>
+                    <td>{{ drink.low_stock_threshold }}</td>
+                    <td>
+                        {% if drink.image %}
+                            <img src="{{ drink.image.url }}" alt="{{ drink.product_name }}" class="product-image">
+                        {% else %}
+                            <span style="color: #9ca3af; font-style: italic;">No Image</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Low Stock Notification Modal -->
+{% if low_stock_products %}
+<div id="lowStockNotification" class="notification-overlay">
+    <div class="notification-content">
+        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--danger-color); margin-bottom: 20px;"></i>
+        <h3>Low Stock Alert!</h3>
+        <p>The following products are below their stock threshold:</p>
+        <ul>
+            {% for product in low_stock_products %}
+            <li><strong>{{ product.product_name }}</strong>: {{ product.stock_quantity }} remaining</li>
+            {% endfor %}
+        </ul>
+        <button class="btn-close" onclick="closeNotification()">
+            <i class="fas fa-times"></i> Close Alert
+        </button>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- Permission Denied Popup -->
+<div id="permissionPopup" class="popup-overlay">
+    <div class="popup-content">
+        <i class="fas fa-lock" style="font-size: 3rem; color: var(--danger-color); margin-bottom: 20px;"></i>
+        <p><strong>Access Denied</strong><br>You don't have permission to view this page</p>
+        <button class="btn-close" onclick="closePopup()">
+            <i class="fas fa-times"></i> Close
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Enhanced JavaScript with animations
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show notification if low stock products exist
+        const notification = document.getElementById('lowStockNotification');
+        if (notification) {
+            setTimeout(() => {
+                notification.style.display = 'block';
+            }, 500);
+        }
+
+        // Show permission popup for non-admin users
+        {% if user.last_name != 'admin' %}
+        const permissionPopup = document.getElementById('permissionPopup');
+        if (permissionPopup) {
+            permissionPopup.style.display = 'flex';
+        }
+        {% endif %}
+
+        // Add smooth scrolling for any internal links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add loading animation to images
+        const images = document.querySelectorAll('.product-image');
+        images.forEach(img => {
+            img.addEventListener('load', function() {
+                this.style.opacity = '0';
+                this.style.animation = 'fadeIn 0.5s ease-out forwards';
+            });
+        });
+    });
+
+    function closeNotification() {
+        const notification = document.getElementById('lowStockNotification');
+        notification.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 300);
+    }
+
+    function closePopup() {
+        const popup = document.getElementById('permissionPopup');
+        popup.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => {
+            popup.style.display = 'none';
+        }, 300);
+    }
+
+    // Add fade out animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+{% endblock %}

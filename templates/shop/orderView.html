@@ -1,0 +1,631 @@
+{% extends 'shop/basic.html' %}
+{% block title %} Orders - Royal Shetkari {% endblock %}
+
+{% load static %}
+{% block css %}
+<link href="{% static 'template/all_template.css' %}" rel="stylesheet">
+<style>
+    .payment-summary {
+        margin-top: 20px;
+    }
+    .badge-cash {
+        background-color: #28a745;
+    }
+    .badge-online {
+        background-color: #007bff;
+    }
+    .badge-card {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .badge-other {
+        background-color: #dc3545;
+    }
+    .payment-summary li {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+    }
+    
+    .payment-method-cash,
+    .payment-method-online,
+    .payment-method-card,
+    .payment-method-other {
+        height: 32px;
+        width: 55px; 
+        display: inline-flex;
+        justify-content: center;
+        align-items: center; 
+        text-align: center;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 11px;
+    }
+
+    .payment-method-cash {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .payment-method-online {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .payment-method-card {
+        background-color: #ffc107;
+        color: black;
+    }
+
+    .payment-method-other {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    /* Enhanced table styling */
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0,123,255,.05);
+    }
+    
+    .table th {
+        background-color: #007bff;
+        color: white;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .eye-button {
+        text-decoration: none;
+        font-size: 16px;
+        margin-left: 5px;
+    }
+    
+    .eye-button:hover {
+        opacity: 0.7;
+    }
+
+    /* Thermal Printer Specific Styles */
+    @media print {
+        /* Remove all non-essential elements for printing */
+        .no-print, .btn, .form-control, .table-title, .container, .footer {
+            display: none !important;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            width: 80mm;
+            font-size: 12px;
+            line-height: 1.3;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .thermal-receipt {
+            width: 80mm;
+            margin: 0;
+            padding: 2mm;
+            background: white;
+        }
+        
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 3mm;
+            padding-bottom: 2mm;
+            border-bottom: 1px dashed #000;
+        }
+        
+        .receipt-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+            padding: 1mm 0;
+        }
+        
+        .receipt-subtitle {
+            font-size: 12px;
+            margin: 0;
+            padding: 0.5mm 0;
+        }
+        
+        .receipt-contact {
+            font-size: 10px;
+            margin: 0;
+            padding: 0.2mm 0;
+        }
+        
+        .receipt-items {
+            margin: 2mm 0;
+        }
+        
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1mm 0;
+            border-bottom: 1px dotted #ccc;
+            font-size: 11px;
+        }
+        
+        .receipt-item:last-child {
+            border-bottom: none;
+        }
+        
+        .receipt-item-name {
+            flex: 1;
+            padding-right: 2mm;
+        }
+        
+        .receipt-item-qty {
+            min-width: 15mm;
+            text-align: center;
+        }
+        
+        .receipt-item-price {
+            min-width: 20mm;
+            text-align: right;
+        }
+        
+        .receipt-total {
+            margin-top: 2mm;
+            padding-top: 2mm;
+            border-top: 2px solid #000;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .receipt-footer {
+            text-align: center;
+            margin-top: 3mm;
+            padding-top: 2mm;
+            border-top: 1px dashed #000;
+            font-size: 10px;
+        }
+        
+        .receipt-divider {
+            text-align: center;
+            margin: 2mm 0;
+            font-size: 14px;
+        }
+        
+        /* Automatic page sizing */
+        @page {
+            size: 80mm auto;
+            margin: 2mm;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+{% if user.is_authenticated %}
+<div class="container" id="cont" style="padding-bottom: 89px;">
+    <div class="table-wrapper">
+        <div class="table-title">
+            <div class="row">
+                <div class="col-sm-8">
+                    <h2>Order <b>Details</b></h2>
+                </div>
+                <div class="col-sm-8">
+                    <form id="filterForm" method="post" action="">
+                        {% csrf_token %}
+                        {% if user.last_name == "admin" %}
+                        <div class="form-row align-items-center">
+                            <div class="col-auto">
+                                <input type="date" id="startDate" name="start_date" class="form-control">
+                            </div>
+                            <div class="col-auto">
+                                <input type="date" id="endDate" name="end_date" class="form-control">
+                            </div>
+                            <div class="col-auto">
+                                <select name="payment_method" class="form-control">
+                                    <option value="">All Payment Methods</option>
+                                    <option value="Cash">💵 Cash</option>
+                                    <option value="Card">💳 Card</option>
+                                    <option value="Online">🌐 Online</option>
+                                    <option value="Other">📱 Other</option>
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary">🔍 Filter</button>
+                                <a href="" class="btn btn-secondary">🔄 Refresh</a>
+                                <a href="#" onclick="window.print()" class="btn btn-info no-print">🖨️ Print</a>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-lock"></i> Admin access required for filtering
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Payment</th>
+                        <th>Remarks</th>
+                        <th>Items</th>
+                        <th>Update</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in orderHistory %}
+                    <tr>
+                        <td><strong>{{ forloop.counter }}</strong></td>
+                        <td><code>{{ i.order_id }}</code></td>
+                        <td>{{ i.timestamp|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <span class="payment-method-{{ i.payment_method|lower }}">
+                                {{ i.payment_method }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if i.payment_comments %}
+                                {% if i.payment_comments|length > 20 %}
+                                    <span id="shortComment{{ i.order_id }}">
+                                        {{ i.payment_comments|slice:":15" }}...
+                                    </span>
+                                    <a href="#" class="eye-button" onclick="toggleComments('{{ i.order_id }}')" title="View full comment">👁️</a>
+                                    <span id="fullComment{{ i.order_id }}" style="display:none;">
+                                        {{ i.payment_comments }}
+                                    </span>
+                                {% else %}
+                                    {{ i.payment_comments }}
+                                {% endif %}
+                            {% else %}
+                                <em class="text-muted">N/A</em>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" id="click{{ i.order_id }}" class="btn btn-sm btn-outline-primary" title="View & Print Receipt">
+                                📋 View
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'shop:update_order' i.order_id %}" class="btn btn-sm btn-warning">
+                                ✅ Clear
+                            </a>
+                        </td>
+                        <td><strong class="text-success">₹{{ i.amount }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if user.last_name == 'admin' %}
+        <div class="row mt-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">💳 Payment Method Breakdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush payment-summary">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                💵 Cash Payments
+                                <span class="badge badge-cash badge-pill">₹{{ cash_total }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                💳 Card Payments
+                                <span class="badge badge-card badge-pill">₹{{ card_total }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                🌐 Online Payments
+                                <span class="badge badge-online badge-pill">₹{{ online_total }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                📱 Other Payments
+                                <span class="badge badge-other badge-pill">₹{{ other_total }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white text-center">
+                        <h5 class="mb-0">💰 Total Amount</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="text-success mb-0">₹{{ total_amount }}</h2>
+                        <small class="text-muted">Selected Period</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center mt-4">
+            <h4 class="alert-heading">💰 Total Amount</h4>
+            <h2 class="text-primary">₹{{ total_amount }}</h2>
+            <small>Selected Period Total</small>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Hidden div for receipt content -->
+    <div id="citems" style="display: none;"></div>
+</div>
+
+{% else %}
+<div id="cont2">
+    <div class="alert alert-info text-center">
+        <h4><i class="fas fa-sign-in-alt"></i> Authentication Required</h4>
+        <p>You need to <strong><a class="alert-link" data-toggle="modal" data-target="#loginModal">Login</a></strong> to view order details</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+    function toggleComments(orderId) {
+        const shortComment = document.getElementById(`shortComment${orderId}`);
+        const fullComment = document.getElementById(`fullComment${orderId}`);
+        
+        if (fullComment.style.display === "none" || fullComment.style.display === "") {
+            shortComment.style.display = "none";
+            fullComment.style.display = "inline";
+        } else {
+            shortComment.style.display = "inline";
+            fullComment.style.display = "none";
+        }
+    }
+</script>
+
+<script>
+$(document).ready(function() {
+    {% for i in orderHistory %}
+    $('#click{{i.order_id}}').click(function() {
+        // Clear previous content
+        $('#citems').empty();
+        
+        // Parse order items
+        let mydata = "{{i.items_json}}";
+        mydata = mydata.replace(/&quot;/g, '"');
+        let obj = JSON.parse(mydata);
+        let totalAmount = 0;
+        let itemCount = Object.keys(obj).length;
+        
+        // Build thermal receipt HTML
+        let receiptHTML = `
+        <div class="thermal-receipt">
+            <div class="receipt-header">
+                <div class="receipt-title">रॉयल शेतकरी</div>
+                <div class="receipt-subtitle">Royal Shetkari</div>
+                <div class="receipt-contact">प्रोप्रा. अभिजीत कोळवले</div>
+                <div class="receipt-contact">मो. ९३७०७०२५८६</div>
+                <div class="receipt-contact">तेजस अ‍ॅग्रो शेजारी, पंढरपूर-पुणे हायवे</div>
+                <div class="receipt-contact">भंडीशेगाव, ता. पंढरपूर, जि. सोलापूर</div>
+                <div class="receipt-contact">Order ID: {{i.order_id}}</div>
+                <div class="receipt-contact">Date: {{i.timestamp}}</div>
+            </div>
+            
+            <div class="receipt-divider">════════════════════</div>
+            
+            <div class="receipt-items">`;
+        
+        // Add items
+        for (let item in obj) {
+            let name = obj[item][1];
+            let qty = obj[item][0];
+            let itemPrice = obj[item][2];
+            let sumPrice = qty * itemPrice;
+            totalAmount += sumPrice;
+            
+            // Truncate long names for thermal printer
+            let shortName = name.length > 15 ? name.substring(0, 12) + '...' : name;
+            
+            receiptHTML += `
+                <div class="receipt-item">
+                    <div class="receipt-item-name">${shortName}</div>
+                    <div class="receipt-item-qty">${qty}</div>
+                    <div class="receipt-item-price">₹${sumPrice}</div>
+                </div>`;
+        }
+        
+        receiptHTML += `
+            </div>
+            
+            <div class="receipt-divider">════════════════════</div>
+            
+            <div class="receipt-total">
+                TOTAL: ₹${totalAmount}/-
+            </div>
+            
+            <div class="receipt-footer">
+                <div>Payment: {{i.payment_method}}</div>
+                <div>Thank You for Shopping!</div>
+                <div>════════════════════</div>
+            </div>
+        </div>`;
+        
+        $('#citems').html(receiptHTML);
+        
+        // Calculate dynamic height based on items
+        let baseHeight = 300; // Base height for header and footer
+        let itemHeight = 25; // Height per item
+        let calculatedHeight = baseHeight + (itemCount * itemHeight);
+        let finalHeight = Math.max(calculatedHeight, 400); // Minimum height
+        
+        // Open popup window with dynamic sizing
+        let popupWindow = window.open('', 'Thermal Receipt', `width=350,height=${finalHeight},scrollbars=yes`);
+        
+        popupWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Receipt - Order {{i.order_id}}</title>
+            <meta charset="UTF-8">
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: 'Courier New', monospace;
+                    width: 80mm;
+                    margin: 0 auto;
+                    background: white;
+                    padding: 5mm;
+                }
+                
+                .thermal-receipt {
+                    width: 100%;
+                    margin: 0;
+                    padding: 0;
+                }
+                
+                .receipt-header {
+                    text-align: center;
+                    margin-bottom: 3mm;
+                    padding-bottom: 2mm;
+                    border-bottom: 1px dashed #000;
+                }
+                
+                .receipt-title {
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin: 1mm 0;
+                }
+                
+                .receipt-subtitle {
+                    font-size: 14px;
+                    margin: 1mm 0;
+                }
+                
+                .receipt-contact {
+                    font-size: 10px;
+                    margin: 0.5mm 0;
+                    line-height: 1.2;
+                }
+                
+                .receipt-divider {
+                    text-align: center;
+                    margin: 2mm 0;
+                    font-size: 12px;
+                }
+                
+                .receipt-items {
+                    margin: 2mm 0;
+                }
+                
+                .receipt-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 1mm 0;
+                    border-bottom: 1px dotted #ccc;
+                    font-size: 11px;
+                    align-items: center;
+                }
+                
+                .receipt-item:last-child {
+                    border-bottom: none;
+                }
+                
+                .receipt-item-name {
+                    flex: 1;
+                    padding-right: 2mm;
+                }
+                
+                .receipt-item-qty {
+                    min-width: 12mm;
+                    text-align: center;
+                }
+                
+                .receipt-item-price {
+                    min-width: 18mm;
+                    text-align: right;
+                    font-weight: bold;
+                }
+                
+                .receipt-total {
+                    margin-top: 2mm;
+                    padding: 2mm 0;
+                    border-top: 2px solid #000;
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 16px;
+                }
+                
+                .receipt-footer {
+                    text-align: center;
+                    margin-top: 3mm;
+                    padding-top: 2mm;
+                    border-top: 1px dashed #000;
+                    font-size: 10px;
+                    line-height: 1.4;
+                }
+                
+                .no-print {
+                    margin: 10px 0;
+                    text-align: center;
+                }
+                
+                .print-btn {
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    margin: 0 5px;
+                }
+                
+                .print-btn:hover {
+                    background: #0056b3;
+                }
+                
+                @media print {
+                    .no-print {
+                        display: none !important;
+                    }
+                    
+                    body {
+                        width: 80mm;
+                        margin: 0;
+                        padding: 2mm;
+                    }
+                    
+                    @page {
+                        size: 80mm ${Math.ceil(finalHeight * 0.26)}mm;
+                        margin: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="no-print">
+                <button class="print-btn" onclick="window.print()">🖨️ Print Receipt</button>
+                <button class="print-btn" onclick="window.close()" style="background: #6c757d;">❌ Close</button>
+            </div>
+            ${receiptHTML}
+        </body>
+        </html>`);
+        
+        popupWindow.document.close();
+        popupWindow.focus();
+    });
+    {% endfor %}
+});
+</script>
+
+<div class="footer bg-primary text-light mt-5" style="width: 100%; position: relative; bottom: 0; left: 0;">
+    <p class="text-center py-3 mb-0">
+        <i class="fas fa-copyright"></i> 2024 Designed by 
+        <a href="https://mipashyayalmar.github.io/-Profile-data/" target="_blank" rel="noopener noreferrer" class="text-light">
+            <strong>@Mipashya</strong>
+        </a>
+    </p>
+</div>
+{% endblock %}
