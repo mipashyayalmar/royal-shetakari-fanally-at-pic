@@ -270,12 +270,9 @@ function getCartKey() {
 var cartKey = getCartKey();
 var cart = JSON.parse(localStorage.getItem(cartKey)) || {};
 
-
-
 // Add this to your JavaScript section
 function dismissNotification() {
     document.getElementById('lowStockNotification').style.display = 'none';
-    // Optional: Store dismissal in localStorage so it doesn't reappear on refresh
     localStorage.setItem('lowStockDismissed', 'true');
 }
 
@@ -287,46 +284,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Optional: Reset dismissal when new low stock items appear
-// Add this to your showNotification function if you want
 function showNotification(message) {
-    // ... existing code ...
-    // When showing any notification, reset the low stock dismissal
     localStorage.removeItem('lowStockDismissed');
+    // You can enhance this to show actual notifications to user
+    console.log(message);
 }
 
-// Optimized Function to print receipt for thermal printer (Counter or KOT)
-function printReceipt(printerType, billNo = null) {
-    let items = document.querySelectorAll('#items li:not(:last-child)'); // Exclude total row
-    let totalPriceText = document.getElementById('totalPrice').innerText;
-    
-    // Create minimal content for thermal printer
-    let printContent = generateThermalContent(printerType, items, totalPriceText, billNo);
-    
-    // Open minimal print window
-    let printWindow = window.open('', printerType === 'kot' ? 'KOT' : 'Receipt', 
-        'width=300,height=400,scrollbars=no,resizable=no');
-    
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    // Auto print and close
-    printWindow.onload = function() {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.onafterprint = function() {
-            printWindow.close();
-        };
-        // Fallback close after 3 seconds
-        setTimeout(() => {
-            if (!printWindow.closed) {
-                printWindow.close();
-            }
-        }, 3000);
-    };
-}
-
-// Generate thermal printer content
+// ENHANCED: Generate thermal printer content with proper item handling
 function generateThermalContent(printerType, items, totalPriceText, billNo) {
     let content = `
 <!DOCTYPE html>
@@ -346,75 +310,85 @@ function generateThermalContent(printerType, items, totalPriceText, billNo) {
         }
         body {
             font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.2;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1.3;
             width: 80mm;
-            padding: 2mm;
+            padding: 3mm;
             color: #000;
             background: #fff;
         }
         .header {
             text-align: center;
-            margin-bottom: 3mm;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 2mm;
+            margin-bottom: 4mm;
+            border-bottom: 2px solid #000;
+            padding-bottom: 3mm;
         }
         .shop-name {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 1mm;
+            margin-bottom: 2mm;
         }
         .shop-details {
-            font-size: 10px;
-            line-height: 1.1;
+            font-size: 12px;
+            line-height: 1.2;
+            font-weight: normal;
         }
         .bill-info {
             text-align: center;
-            margin: 2mm 0;
-            font-size: 11px;
+            margin: 3mm 0;
+            font-size: 13px;
+            font-weight: bold;
         }
         .divider {
-            border-top: 1px dashed #000;
-            margin: 2mm 0;
+            border-top: 2px solid #000;
+            margin: 3mm 0;
         }
         .items {
-            margin: 2mm 0;
+            margin: 3mm 0;
         }
         .item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 1mm;
-            font-size: 11px;
+            margin-bottom: 2mm;
+            font-size: 13px;
+            font-weight: bold;
+            align-items: flex-start;
         }
         .item-name {
             flex: 1;
-            margin-right: 2mm;
+            margin-right: 3mm;
+            word-wrap: break-word;
         }
         .item-qty-price {
             white-space: nowrap;
+            text-align: right;
         }
         .total-section {
-            border-top: 1px dashed #000;
-            padding-top: 2mm;
-            margin-top: 2mm;
+            border-top: 2px solid #000;
+            padding-top: 3mm;
+            margin-top: 3mm;
         }
         .total {
             display: flex;
             justify-content: space-between;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 15px;
+            margin-bottom: 2mm;
         }
         .footer {
             text-align: center;
-            margin-top: 3mm;
-            font-size: 10px;
-            border-top: 1px dashed #000;
-            padding-top: 2mm;
+            margin-top: 4mm;
+            font-size: 12px;
+            border-top: 2px solid #000;
+            padding-top: 3mm;
         }
         @media print {
             body {
                 width: 80mm !important;
                 max-width: 80mm !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
@@ -449,64 +423,60 @@ function generateThermalContent(printerType, items, totalPriceText, billNo) {
     </div>
     <div class="divider"></div>`;
 
-    // Items section
+    // Items section - properly get all cart items
     content += `<div class="items">`;
     
     let subtotal = 0;
     let totalQuantity = 0;
     let itemCount = 0;
 
-    items.forEach((item) => {
-        let itemNameElement = item.querySelector('.item-name');
-        let itemQtyElement = item.querySelector('.qty-input');
-        let itemPriceElement = item.querySelector('.original-item-price');
+    // Get items directly from cart object
+    for (let itemId in cart) {
+        let itemData = cart[itemId];
+        let itemQty = itemData[0];
+        let itemName = itemData[1];
+        let itemPrice = itemData[2];
 
-        if (itemNameElement && itemQtyElement && itemPriceElement) {
-            let itemName = itemNameElement.innerText.replace(/^\d+:\s*/, ''); // Remove number prefix
-            let itemQty = parseInt(itemQtyElement.value) || 0;
-            let itemPriceText = itemPriceElement.innerText.replace('Rs. ', '').trim();
-            let itemPrice = parseFloat(itemPriceText) || 0;
+        if (itemQty > 0) {
+            itemCount++;
+            let itemTotal = itemQty * itemPrice;
+            subtotal += itemTotal;
+            totalQuantity += itemQty;
 
-            if (itemQty > 0) {
-                itemCount++;
-                let itemTotal = itemQty * itemPrice;
-                subtotal += itemTotal;
-                totalQuantity += itemQty;
+            // Split Marathi/English names if present
+            let productNames = itemName.split('/');
+            let displayName = productNames.length > 1 ? 
+                `${productNames[0].trim()}/${productNames[1].trim()}` : 
+                itemName.trim();
 
-                // Split Marathi/English names if present
-                let productNames = itemName.split('/');
-                let displayName = productNames.length > 1 ? 
-                    `${productNames[0].trim()}/${productNames[1].trim()}` : 
-                    itemName.trim();
-
-                // Truncate long names for thermal printer
-                if (displayName.length > 25) {
-                    displayName = displayName.substring(0, 22) + '...';
-                }
-
-                content += `
-                <div class="item">
-                    <div class="item-name">${itemCount}. ${displayName}</div>
-                    <div class="item-qty-price">${itemQty}x${itemPrice.toFixed(0)} = ${itemTotal.toFixed(0)}</div>
-                </div>`;
+            // Truncate long names for thermal printer
+            if (displayName.length > 22) {
+                displayName = displayName.substring(0, 19) + '...';
             }
+
+            content += `
+            <div class="item">
+                <div class="item-name">${itemCount}. ${displayName}</div>
+                <div class="item-qty-price">${itemQty}x${itemPrice} = ${itemTotal}</div>
+            </div>`;
         }
-    });
+    }
 
     content += `</div>`;
 
-    // Total section
+    // Total section with proper digit formatting
     let totalAmount = totalPriceText.replace('Rs. ', '').replace(' /-', '').trim();
+    let totalAmountNumber = parseFloat(totalAmount) || 0;
     
     content += `
     <div class="total-section">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 1mm;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2mm; font-size: 13px;">
             <span>Total Items:</span>
-            <span>${totalQuantity}</span>
+            <span>${totalQuantity.toString().padStart(2, '0')}</span>
         </div>
         <div class="total">
             <span>TOTAL:</span>
-            <span>Rs. ${totalAmount}</span>
+            <span>Rs. ${totalAmountNumber.toFixed(0)}</span>
         </div>
     </div>`;
 
@@ -522,38 +492,86 @@ function generateThermalContent(printerType, items, totalPriceText, billNo) {
     return content;
 }
 
-// Updated function to generate and download PDF for saving
-function generateAndSavePDF(printerType, billNo = null) {
-    let items = document.querySelectorAll('#items li:not(:last-child)');
+// ENHANCED: Function to print receipt with better error handling and timing
+function printReceipt(printerType, billNo = null, callback = null) {
+    // Check if cart is empty
+    if (Object.keys(cart).length === 0) {
+        showNotification('Your cart is empty. Please add items to print.');
+        if (callback) callback(false);
+        return;
+    }
+
     let totalPriceText = document.getElementById('totalPrice').innerText;
     
-    // Create a temporary iframe for PDF generation
-    let iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.left = '-9999px';
-    iframe.style.width = '80mm';
-    iframe.style.height = 'auto';
+    // Create content for thermal printer using cart data directly
+    let printContent = generateThermalContent(printerType, null, totalPriceText, billNo);
     
-    document.body.appendChild(iframe);
+    // Open print window with specific dimensions
+    let windowFeatures = 'width=320,height=600,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no';
+    let printWindow = window.open('', printerType === 'kot' ? 'KOT' : 'Receipt', windowFeatures);
     
-    let printContent = generateThermalContent(printerType, items, totalPriceText, billNo);
+    if (!printWindow) {
+        showNotification('Pop-up blocked! Please allow pop-ups for printing.');
+        if (callback) callback(false);
+        return;
+    }
     
-    iframe.contentDocument.write(printContent);
-    iframe.contentDocument.close();
-    
-    // Wait for content to load then trigger print
-    setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
+    try {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
         
-        // Clean up
+        // Enhanced print handling with proper timing
+        printWindow.onload = function() {
+            printWindow.focus();
+            
+            // Wait a bit for content to fully load
+            setTimeout(() => {
+                try {
+                    printWindow.print();
+                    
+                    // Handle after print events
+                    printWindow.onafterprint = function() {
+                        setTimeout(() => {
+                            printWindow.close();
+                            if (callback) callback(true);
+                        }, 100);
+                    };
+                    
+                    // Enhanced fallback for browsers that don't support onafterprint
+                    setTimeout(() => {
+                        if (!printWindow.closed) {
+                            printWindow.close();
+                            if (callback) callback(true);
+                        }
+                    }, 8000); // Increased timeout for slower printers
+                    
+                } catch (printError) {
+                    console.error('Print error:', printError);
+                    printWindow.close();
+                    if (callback) callback(false);
+                }
+            }, 800); // Increased delay for better reliability
+        };
+        
+        // Fallback if onload doesn't fire
         setTimeout(() => {
-            document.body.removeChild(iframe);
-        }, 1000);
-    }, 500);
+            if (printWindow && !printWindow.closed) {
+                try {
+                    printWindow.print();
+                } catch (e) {
+                    console.error('Fallback print error:', e);
+                }
+            }
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Print window error:', error);
+        showNotification('Error opening print window: ' + error.message);
+        if (callback) callback(false);
+    }
 }
 
-// Updated clear cart function with thermal print optimization
+// Function to clear the cart
 function clearCart() {
     cart = {};
     localStorage.removeItem(cartKey);
@@ -567,116 +585,7 @@ function clearCart() {
     }
 }
 
-// Thermal printer test function
-function testThermalPrint() {
-    let testWindow = window.open('', 'Test Print', 'width=300,height=400');
-    testWindow.document.write(`
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        @page { size: 80mm auto; margin: 0; }
-        body { 
-            font-family: 'Courier New', monospace; 
-            font-size: 12px; 
-            width: 80mm; 
-            padding: 2mm; 
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <h3>Thermal Printer Test</h3>
-    <p>रॉयल शेतकरी</p>
-    <p>Test Print Successful!</p>
-    <p>Date: ${new Date().toLocaleString('en-IN')}</p>
-</body>
-</html>`);
-    
-    testWindow.document.close();
-    testWindow.focus();
-    testWindow.print();
-    testWindow.close();
-}
-
-// Export functions for use in main template
-window.printReceipt = printReceipt;
-window.generateAndSavePDF = generateAndSavePDF;
-window.clearCart = clearCart;
-window.testThermalPrint = testThermalPrint;
-
-// Function to clear the cart
-function clearCart() {
-    cart = {};
-    localStorage.removeItem(cartKey);
-    $('#items').html('');
-    $('#totalPrice').html('Rs. 0 /-');
-    $('.menu-item').css('background-color', '');
-    $('.category').css('background-color', '');
-    showNotification('Cart cleared successfully!');
-    soundEffects2.play();
-}
-
-// Update the cart display
-// Update the updateCart function to include a fixed total price display
-function updateCart() {
-    var totalItems = 0;
-    var totalPrice = 0;
-    var cartItems = '';
-    var i = 0;
-
-    for (var item in cart) {
-        var name = cart[item][1];
-        var qty = cart[item][0];
-        var itemPrice = cart[item][2];
-        var itemTotal = qty * itemPrice;
-
-        totalItems += qty;
-        totalPrice += itemTotal;
-        cartItems += `
-            <li class="order-item list-group-item d-flex justify-content-between align-items-center" id="item-${item}">
-                <div class="item-info">
-                    <i class="fas hover-icon remove-item" id="delete${item}" style="cursor: pointer;"></i>
-                    <img src="https://content.jdmagicbox.com/v2/comp/pandharpur/e5/9999p2186.2186.240102180603.t9e5/catalogue/hotel-royal-shetkari-bhandishegaon-pandharpur-restaurants-m844m8eap3.jpg" alt="" width="30" height="30"/>
-                    <div class="item-name"><a href='/shop/search/?search=${name}' class='alert-link'><span>${++i}: ${name}</span></a></div>
-                </div>
-                <div class="item-quantity">
-                    <button id="decrease${item}" class="btn btn-primary btn-sm decrease">-</button>
-                    <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
-                    <button id="increase${item}" class="btn btn-primary btn-sm increase">+</button>
-                </div>
-                <div class="original-item-price">
-                    Rs. ${itemPrice}
-                    <div class="item-price">Rs. ${itemTotal}</div>
-                </div>
-            </li>`;
-    }
-
-    // Add empty space before total
-    cartItems += `<div style="height: 20px;"></div>`;
-
-    cartItems += `
-        <li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque; position: sticky; bottom: 0;">
-            <span style="font-weight: bold;">TOTAL PRICE:</span>
-            <span class="badge badge-danger badge-pill" id="totalPrice" style="font-size: 16px;">
-                Rs. ${totalPrice.toFixed(2)} /-
-            </span>
-        </li>`;
-
-    $('#items').html(cartItems);
-    localStorage.setItem(cartKey, JSON.stringify(cart));
-    $('#itemsJson').val(JSON.stringify(cart));
-    $('#amount').val(totalPrice);
-}
-
-// Initialize cart
-function initializeCart(cart) {
-    updateCart();
-}
-
-
-// Update cart display function
+// Update cart display function with proper total formatting
 function updateCart() {
     var totalItems = 0;
     var totalPrice = 0;
@@ -715,8 +624,8 @@ function updateCart() {
     $('#itemsJson').val(JSON.stringify(cart));
     $('#amount').val(totalPrice);
     
-    // Update total price display
-    $('#totalPrice').html(`Rs. ${totalPrice.toFixed(2)} /-`);
+    // Update total price display with proper formatting
+    $('#totalPrice').html(`Rs. ${totalPrice.toFixed(0)} /-`);
 }
 
 // Initialize cart
@@ -737,7 +646,8 @@ document.addEventListener('click', function(event) {
         }
         
         if (!cart[idstr]) {
-            var price = parseInt(document.getElementById('pricepr' + idstr).innerText.replace('Rs. ', '').replace(' /-', ''));
+            var priceText = document.getElementById('pricepr' + idstr).innerText;
+            var price = parseInt(priceText.replace('Rs. ', '').split(' /-')[0]);
             cart[idstr] = [1, name, price];
             showNotification(name + " added to cart");
         } else {
@@ -749,7 +659,9 @@ document.addEventListener('click', function(event) {
             showNotification(name + " quantity increased to " + cart[idstr][0]);
         }
 
-        soundEffect.play();
+        if (typeof soundEffect !== 'undefined') {
+            soundEffect.play();
+        }
         updateCart();
     }
 });
@@ -769,16 +681,28 @@ $('#items').on('click', 'button.decrease', function() {
 $('#items').on('click', 'button.increase', function() {
     var id = this.id.slice(8);
     if (cart[id]) {
+        var stock = parseInt(document.getElementById('pr' + id).getAttribute('data-stock'));
+        if (cart[id][0] >= stock) {
+            showNotification("Stock limit reached for this item!");
+            return;
+        }
         cart[id][0] += 1;
         updateCart();
     }
 });
 
 $('#items').on('change', 'input.qty-input', function() {
-    var id = this.id.slice(3);
+    var id = this.id.slice(4);
     var newQty = parseInt(this.value);
     if (newQty > 0) {
-        cart[id][0] = newQty;
+        var stock = parseInt(document.getElementById('pr' + id).getAttribute('data-stock'));
+        if (newQty > stock) {
+            showNotification("Only " + stock + " items available!");
+            this.value = stock;
+            cart[id][0] = stock;
+        } else {
+            cart[id][0] = newQty;
+        }
     } else {
         delete cart[id];
     }
@@ -800,7 +724,9 @@ const modalCommentsInput = document.getElementById('modal_payment_comments');
 
 paymentRadios.forEach(radio => {
     radio.addEventListener('change', function() {
-        soundEffect1.play();
+        if (typeof soundEffect1 !== 'undefined') {
+            soundEffect1.play();
+        }
         if (this.value === 'other') {
             modal.style.display = 'block';
         } else {
@@ -867,7 +793,7 @@ $('#counterPrint').on('click', function() {
     printReceipt('counter');
 });
 
-// Handle form submission with AJAX
+// ENHANCED: Handle form submission with better AJAX and print timing
 $('#checkoutForm').on('submit', function(event) {
     event.preventDefault();
 
@@ -886,12 +812,14 @@ $('#checkoutForm').on('submit', function(event) {
     var kotAndPrint = action === 'kot_print';
     var saveAndBill = action === 'save_bill';
 
+    // Disable form buttons to prevent multiple submissions
+    $('#checkoutForm button[type="submit"]').prop('disabled', true);
+    
     var formData = new FormData(this);
     formData.append('action', action);
 
-    if (printAfterSave) {
-        printReceipt('counter');
-    }
+    // Show processing message
+    showNotification('Processing order...');
 
     $.ajax({
         url: '{% url "shop:checkout" %}',
@@ -899,36 +827,115 @@ $('#checkoutForm').on('submit', function(event) {
         data: formData,
         processData: false,
         contentType: false,
+        timeout: 30000, // 30 second timeout
         success: function(response) {
             let billNo = response.bill_no || null;
-            showNotification('Order processed successfully for ' + action + '!');
-            if (kotAndPrint) {
-                printReceipt('kot', billNo);
-                printReceipt('counter', billNo);
+            showNotification('Order saved successfully!');
+            
+            // Handle different print actions with proper sequencing
+            if (printAfterSave) {
+                showNotification('Preparing receipt for printing...');
+                setTimeout(() => {
+                    printReceipt('counter', billNo, function(success) {
+                        if (success) {
+                            showNotification('Receipt printed successfully!');
+                        } else {
+                            showNotification('Receipt prepared (check printer if needed)');
+                        }
+                        // Clear cart after successful print
+                        setTimeout(() => {
+                            clearCart();
+                            updateCart();
+                            resetForm();
+                        }, 1000);
+                    });
+                }, 500);
+                
+            } else if (kotAndPrint) {
+                showNotification('Preparing KOT and receipt...');
+                // Print KOT first
+                setTimeout(() => {
+                    printReceipt('kot', billNo, function(kotSuccess) {
+                        if (kotSuccess) {
+                            showNotification('KOT printed, preparing receipt...');
+                        }
+                        // Then print receipt after KOT
+                        setTimeout(() => {
+                            printReceipt('counter', billNo, function(receiptSuccess) {
+                                if (receiptSuccess) {
+                                    showNotification('Both KOT and receipt printed successfully!');
+                                } else {
+                                    showNotification('KOT and receipt prepared (check printer if needed)');
+                                }
+                                // Clear cart after both prints
+                                setTimeout(() => {
+                                    clearCart();
+                                    updateCart();
+                                    resetForm();
+                                }, 1000);
+                            });
+                        }, 2000); // 2 second delay between KOT and receipt
+                    });
+                }, 500);
+                
             } else if (saveAndBill) {
-                printReceipt('counter', billNo);
-            }
-            if (action === 'save' || action === 'save_print' || action === 'save_bill' || action === 'kot_print') {
+                showNotification('Preparing bill for printing...');
+                setTimeout(() => {
+                    printReceipt('counter', billNo, function(success) {
+                        if (success) {
+                            showNotification('Bill printed successfully!');
+                        } else {
+                            showNotification('Bill prepared (check printer if needed)');
+                        }
+                        // Clear cart after successful print
+                        setTimeout(() => {
+                            clearCart();
+                            updateCart();
+                            resetForm();
+                        }, 1000);
+                    });
+                }, 500);
+                
+            } else {
+                // Just save without printing
                 clearCart();
                 updateCart();
+                resetForm();
             }
-            $('#checkoutForm')[0].reset();
-            $('#payment_comments_container').css('display', 'none');
-            $('#payment_comments').val('');
         },
         error: function(xhr, status, error) {
-            showNotification('Error processing order: ' + (xhr.responseText || error));
-            console.log('AJAX Error:', status, error, xhr.responseText);
+            let errorMessage = 'Error processing order: ';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMessage += xhr.responseJSON.error;
+            } else if (xhr.responseText) {
+                errorMessage += xhr.responseText;
+            } else {
+                errorMessage += error;
+            }
+            showNotification(errorMessage);
+            console.error('AJAX Error:', status, error, xhr.responseText);
+        },
+        complete: function() {
+            // Re-enable form buttons
+            $('#checkoutForm button[type="submit"]').prop('disabled', false);
         }
     });
 });
+
+// Helper function to reset form
+function resetForm() {
+    $('#checkoutForm')[0].reset();
+    $('#payment_comments_container').css('display', 'none');
+    $('#payment_comments').val('');
+    $('#payment-alert').hide();
+}
 
 // Clear cart button
 $('#clearCart').on('click', function() {
     const userConfirmed = confirm('Are you sure you want to clear the cart? This action cannot be undone.');
     if (userConfirmed) {
         clearCart();
-        alert('Your cart has been cleared.');
+        showNotification('Your cart has been cleared.');
     } else {
         showNotification('Cart clearing was cancelled.');
     }
@@ -936,7 +943,9 @@ $('#clearCart').on('click', function() {
 
 // Refresh page button
 $('#refreshPage').on('click', function() {
-    soundEffect1.play();
+    if (typeof soundEffect1 !== 'undefined') {
+        soundEffect1.play();
+    }
     setTimeout(function() {
         location.reload();
     }, 500);
@@ -947,12 +956,36 @@ $('#refreshPage').on('click', function() {
 // Handle Django messages
 {% if messages %}
     {% for message in messages %}
-        alert('{{ message }}');
+        showNotification('{{ message }}');
     {% endfor %}
     clearCart();
     updateCart();
 {% endif %}
 
-initializeCart(cart);
+// Initialize cart on page load
+$(document).ready(function() {
+    initializeCart(cart);
+});
+
+// Additional enhancement: Add keyboard shortcuts
+$(document).keydown(function(e) {
+    // Ctrl+P for quick print
+    if (e.ctrlKey && e.keyCode === 80) {
+        e.preventDefault();
+        $('#counterPrint').click();
+    }
+    // Ctrl+K for KOT
+    if (e.ctrlKey && e.keyCode === 75) {
+        e.preventDefault();
+        $('#kotPrint').click();
+    }
+    // Ctrl+S for save
+    if (e.ctrlKey && e.keyCode === 83) {
+        e.preventDefault();
+        if (validatePaymentMethod()) {
+            $('button[name="action"][value="save"]').click();
+        }
+    }
+});
 </script>
 {% endblock %}
