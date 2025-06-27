@@ -3,11 +3,22 @@ from .models import Orders
 
 from .models import Table
 
+# forms.py
+from django import forms
+from .models import Table
+
 class TableForm(forms.ModelForm):
     class Meta:
         model = Table
-        fields = ['number', 'status']  # Fields to display in the form
+        fields = ['number', 'section', 'status', 'amount']
+        widgets = {
+            'number': forms.NumberInput(attrs={'class': 'form-control'}),
+            'section': forms.Select(attrs={'class': 'form-control'}),
+            'status': forms.TextInput(attrs={'class': 'form-control'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
 
+        
 class OrderUpdateForm(forms.ModelForm):
     class Meta:
         model = Orders

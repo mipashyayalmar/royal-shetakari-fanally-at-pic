@@ -210,9 +210,15 @@ def inventory_view(request):
 
 
 
+# views.py
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import Table
+from .forms import TableForm
+
 @login_required
 def table_page(request):
-    if request.method == 'POST':
+    if request.method == 'POST' and request.user.last_name == 'admin':
         form = TableForm(request.POST)
         if form.is_valid():
             form.save()
@@ -220,11 +226,18 @@ def table_page(request):
     else:
         form = TableForm()
 
+    # Group tables by section
+    tables_by_section = {}
+    for table in Table.objects.all().order_by('number'):
+        section = table.get_section_display()
+        if section not in tables_by_section:
+            tables_by_section[section] = []
+        tables_by_section[section].append(table)
 
-    tables = Table.objects.all().order_by('number')
-
-    return render(request, 'shop/table.html', {'form': form, 'tables': tables})
-
+    return render(request, 'shop/table.html', {
+        'form': form,
+        'tables_by_section': tables_by_section
+    })
 
 @login_required
 def orderView(request):
@@ -491,6 +504,9 @@ def index(request, table_number):
     
     return render(request, 'shop/index1.html', context)
     
+
+
+
 def contact(request):
     if request.method == "POST":
         name = request.POST.get('name')
