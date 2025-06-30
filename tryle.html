@@ -1,109 +1,519 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="X-UA-Compatible" content="ie=edge">
-        <link rel="stylesheet" href="style.css">
-        <title>Receipt example</title>
-        <style >
-            * {
-                font-size: 12px;
-                font-family: 'Times New Roman';
-            }
+{% extends 'shop/basic.html' %}
+{% block title %} Orders - Royal Shetkari {% endblock %}
+
+{% load static %}
+{% block css %}
+<link href="{% static 'template/all_template.css' %}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+<style>
+    /* Main Styles */
+    .order-management-container {
+        background: #f5f7fa;
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    
+    .content-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eaeef2;
+    }
+    
+    .page-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    
+    /* Filter Section */
+    .filter-section {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    /* Table Styles */
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .data-table thead th {
+        background: #4a6cf7;
+        color: white;
+        padding: 15px;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+    }
+    
+    .data-table tbody td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .data-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    /* Badges */
+    .badge {
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .badge-cash {
+        background: #10b981;
+        color: white;
+    }
+    
+    .badge-card {
+        background: #f59e0b;
+        color: white;
+    }
+    
+    .badge-online {
+        background: #3b82f6;
+        color: white;
+    }
+    
+    /* PRINT STYLES */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        
+        .print-content, 
+        .print-content * {
+            visibility: visible;
+        }
+        
+        .print-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: white;
+            font-size: 12px;
+        }
+        
+        .print-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+        
+        .print-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .print-subtitle {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .print-meta {
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        .print-table th {
+            background: #f2f2f2 !important;
+            color: #000 !important;
+            border: 1px solid #000 !important;
+            padding: 5px;
+            font-size: 11px;
+        }
+        
+        .print-table td {
+            border: 1px solid #000 !important;
+            padding: 4px;
+            font-size: 11px;
+        }
+        
+        .print-summary {
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+        
+        .print-total {
+            font-weight: bold;
+            text-align: right;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .print-footer {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #000;
+        }
+        
+        @page {
+            size: A4 landscape;
+            margin: 0.5cm;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+{% if user.is_authenticated %}
+<div class="order-management-container">
+    <div class="container">
+        <!-- Print Content (Hidden until printing) -->
+        <div class="print-content" style="display: none;">
+            <div class="print-header">
+                <div class="print-title">ROYAL SHETKARI</div>
+                <div class="print-subtitle">Order Management Report</div>
+                <div class="print-meta">
+                    {% if start_date and end_date %}
+                        Date Range: {{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }} | 
+                    {% endif %}
+                    Printed on: {% now "d M Y H:i" %}
+                </div>
+            </div>
             
-            td,
-            th,
-            tr,
-            table {
-                border-top: 1px solid black;
-                border-collapse: collapse;
-            }
-            
-            td.description,
-            th.description {
-                width: 75px;
-                max-width: 75px;
-            }
-            
-            td.quantity,
-            th.quantity {
-                width: 40px;
-                max-width: 40px;
-                word-break: break-all;
-            }
-            
-            td.price,
-            th.price {
-                width: 40px;
-                max-width: 40px;
-                word-break: break-all;
-            }
-            
-            .centered {
-                text-align: center;
-                align-content: center;
-            }
-            
-            .ticket {
-                width: 155px;
-                max-width: 155px;
-            }
-            
-            img {
-                max-width: inherit;
-                width: inherit;
-            }
-            
-            @media print {
-                .hidden-print,
-                .hidden-print * {
-                    display: none !important;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="ticket">
-            <img src="./logo.png" alt="Logo">
-            <p class="centered">RECEIPT EXAMPLE
-                <br>Address line 1
-                <br>Address line 2</p>
-            <table>
+            <!-- Order List -->
+            <table class="print-table">
                 <thead>
                     <tr>
-                        <th class="quantity">Q.</th>
-                        <th class="description">Description</th>
-                        <th class="price">$$</th>
+                        <th>#</th>
+                        <th>Order ID</th>
+                        <th>Date & Time</th>
+                        <th>Payment Method</th>
+                        <th>Amount</th>
+                        <th>Remarks</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% for order in orderHistory reversed %}
                     <tr>
-                        <td class="quantity">1.00</td>
-                        <td class="description">ARDUINO UNO R3</td>
-                        <td class="price">$25.00</td>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ order.order_id }}</td>
+                        <td>{{ order.timestamp|date:"d M Y H:i" }}</td>
+                        <td>{{ order.payment_method }}</td>
+                        <td>₹{{ order.amount }}</td>
+                        <td>{{ order.payment_comments|default:"-" }}</td>
                     </tr>
-                    <tr>
-                        <td class="quantity">2.00</td>
-                        <td class="description">JAVASCRIPT BOOK</td>
-                        <td class="price">$10.00</td>
-                    </tr>
-                    <tr>
-                        <td class="quantity">1.00</td>
-                        <td class="description">STICKER PACK</td>
-                        <td class="price">$10.00</td>
-                    </tr>
-                    <tr>
-                        <td class="quantity"></td>
-                        <td class="description">TOTAL</td>
-                        <td class="price">$55.00</td>
-                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
-            <p class="centered">Thanks for your purchase!
-                <br>parzibyte.me/blog</p>
+            
+            <!-- Payment Summary -->
+            <div class="print-summary">
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th colspan="3" style="text-align: center;">Payment Method Summary</th>
+                        </tr>
+                        <tr>
+                            <th>Payment Method</th>
+                            <th>Order Count</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Cash</td>
+                            <td>{{ cash_count }}</td>
+                            <td>₹{{ cash_total }}</td>
+                        </tr>
+                        <tr>
+                            <td>Card</td>
+                            <td>{{ card_count }}</td>
+                            <td>₹{{ card_total }}</td>
+                        </tr>
+                        <tr>
+                            <td>Online</td>
+                            <td>{{ online_count }}</td>
+                            <td>₹{{ online_total }}</td>
+                        </tr>
+                        <tr>
+                            <td>Other</td>
+                            <td>{{ other_count }}</td>
+                            <td>₹{{ other_total }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="print-total">
+                    <strong>GRAND TOTAL: ₹{{ total_amount }}</strong>
+                </div>
+            </div>
+            
+            <div class="print-footer">
+                Royal Shetkari POS System | Generated by {{ user.first_name }} | Page {% now "d/m/Y H:i" %}
+            </div>
         </div>
-        <button id="btnPrint" class="hidden-print">Print</button>
-        <script src="script.js"></script>
-    </body>
-</html>
+
+        <!-- Main Content -->
+        <div class="content-card">
+            <!-- Header -->
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-clipboard-list"></i> Order Management
+                </h1>
+                <p class="text-muted">View and manage all customer orders</p>
+            </div>
+            
+            <!-- Filter Section -->
+            {% if user.last_name == "admin" %}
+            <div class="filter-section">
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label>Start Date</label>
+                            <input type="date" name="start_date" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>End Date</label>
+                            <input type="date" name="end_date" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Payment Method</label>
+                            <select name="payment_method" class="form-control">
+                                <option value="">All Methods</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="Online">Online</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary mr-2">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="?" class="btn btn-outline-secondary">
+                                <i class="fas fa-sync-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+            
+            <!-- Action Buttons -->
+            <div class="mb-4">
+                <button onclick="printReport()" class="btn btn-success">
+                    <i class="fas fa-print"></i> Print Full Report
+                </button>
+                
+                {% if start_date and end_date %}
+                <span class="ml-3 text-muted">
+                    Showing orders from {{ start_date|date:"d M Y" }} to {{ end_date|date:"d M Y" }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <!-- Orders Table -->
+            <div class="table-responsive">
+                <table class="data-table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Order ID</th>
+                            <th>Date & Time</th>
+                            <th>Payment</th>
+                            <th>Amount</th>
+                            <th>Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orderHistory reversed %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong>{{ order.order_id }}</strong></td>
+                            <td>
+                                {{ order.timestamp|date:"d M Y" }}<br>
+                                <small class="text-muted">{{ order.timestamp|date:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ order.payment_method|lower }}">
+                                    {{ order.payment_method }}
+                                </span>
+                            </td>
+                            <td>₹{{ order.amount }}</td>
+                            <td>
+                                {% if order.payment_comments %}
+                                    {{ order.payment_comments|truncatechars:30 }}
+                                {% else %}
+                                    <span class="text-muted">None</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'shop:update_order' order.order_id %}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Update
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No orders found</h5>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Summary Section -->
+            <div class="mt-5">
+                <h4 class="mb-4">
+                    <i class="fas fa-chart-pie"></i> Sales Summary
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Payment Methods</h5>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Method</th>
+                                            <th>Orders</th>
+                                            <th>Amount</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Cash</td>
+                                            <td>{{ cash_count }}</td>
+                                            <td>₹{{ cash_total }}</td>
+                                            <td>{{ cash_percentage|floatformat:2 }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Card</td>
+                                            <td>{{ card_count }}</td>
+                                            <td>₹{{ card_total }}</td>
+                                            <td>{{ card_percentage|floatformat:2 }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Online</td>
+                                            <td>{{ online_count }}</td>
+                                            <td>₹{{ online_total }}</td>
+                                            <td>{{ online_percentage|floatformat:2 }}%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Total Revenue</h5>
+                                <h2 class="display-4">₹{{ total_amount }}</h2>
+                                <p class="mb-0">
+                                    {% if start_date and end_date %}
+                                        {{ start_date|date:"d M" }} - {{ end_date|date:"d M Y" }}
+                                    {% else %}
+                                        All Time
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="container mt-5">
+    <div class="alert alert-warning text-center">
+        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+        <h3>Authentication Required</h3>
+        <p>Please login to access the order management system</p>
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#loginModal">
+            <i class="fas fa-sign-in-alt"></i> Login Now
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+    // Enhanced Print Function
+    function printReport() {
+        // Show print content
+        $('.print-content').show();
+        
+        // Print the document
+        window.print();
+        
+        // Hide print content after printing
+        setTimeout(function() {
+            $('.print-content').hide();
+            
+            // Check if print was successful and close if needed
+            if (window.matchMedia('print').matches) {
+                setTimeout(function() {
+                    window.close();
+                }, 1000);
+            }
+        }, 500);
+    }
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        if (!document.hidden) {
+            location.reload();
+        }
+    }, 30000);
+    
+    // Initialize tooltips
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+    
+    // Keyboard shortcuts
+    $(document).keydown(function(e) {
+        // Ctrl+P for print
+        if (e.ctrlKey && e.keyCode === 80) {
+            e.preventDefault();
+            printReport();
+        }
+    });
+</script>
+{% endblock %}

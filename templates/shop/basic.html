@@ -43,9 +43,7 @@
       <li class="nav-item">
         <a class="nav-link" href="/shop/orderView/">Your Orders</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/shop/contact">Contact Us</a>
-      </li>
+     
       {% if user.last_name == 'admin' %}
       <li class="nav-item">
         <a class="nav-link" href="{% url 'shop:inventory'%}">inventory</a>

@@ -252,13 +252,15 @@
 </main-body>
 <script src="{% static 'template/table_menu.js' %}"></script>
 {% endblock %}
-
 {% block js %}
 <script>
 // Audio elements for sound effects
 var soundEffect = new Audio("{% static 'sound/fav.mp3' %}");
 var soundEffects2 = new Audio("{% static 'sound/90s-game-ui-6-185099.mp3' %}");
 var soundEffect1 = new Audio("{% static 'sound/mausklick-82774.mp3' %}");
+
+// Get table number from template context
+var tableNumber = "{{ table_number|escapejs }}";
 
 // Get a unique identifier for each cart (based on the URL)
 function getCartKey() {
@@ -286,11 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function showNotification(message) {
     localStorage.removeItem('lowStockDismissed');
-    // You can enhance this to show actual notifications to user
     console.log(message);
 }
 
-// ENHANCED: Generate thermal printer content with proper item handling
+// ENHANCED: Generate thermal printer content with table number
 function generateThermalContent(printerType, items, totalPriceText, billNo) {
     let content = `
 <!DOCTYPE html>
@@ -414,11 +415,12 @@ function generateThermalContent(printerType, items, totalPriceText, billNo) {
         </div>`;
     }
 
-    // Bill number and date
+    // Bill number, table number, and date
     const currentDate = new Date().toLocaleString('en-IN');
     content += `
     <div class="bill-info">
         ${billNo ? `${printerType === 'kot' ? 'Order' : 'Bill'} No: ${billNo}<br>` : ''}
+        Table: ${tableNumber || 'N/A'}<br>
         Date: ${currentDate}
     </div>
     <div class="divider"></div>`;
@@ -492,7 +494,7 @@ function generateThermalContent(printerType, items, totalPriceText, billNo) {
     return content;
 }
 
-// ENHANCED: Function to print receipt with better error handling and timing
+// ENHANCED: Function to print receipt with 2-second auto-close
 function printReceipt(printerType, billNo = null, callback = null) {
     // Check if cart is empty
     if (Object.keys(cart).length === 0) {
@@ -520,49 +522,24 @@ function printReceipt(printerType, billNo = null, callback = null) {
         printWindow.document.write(printContent);
         printWindow.document.close();
         
-        // Enhanced print handling with proper timing
+        // Wait for content to load and trigger print
         printWindow.onload = function() {
             printWindow.focus();
-            
-            // Wait a bit for content to fully load
             setTimeout(() => {
                 try {
                     printWindow.print();
-                    
-                    // Handle after print events
-                    printWindow.onafterprint = function() {
-                        setTimeout(() => {
-                            printWindow.close();
-                            if (callback) callback(true);
-                        }, 100);
-                    };
-                    
-                    // Enhanced fallback for browsers that don't support onafterprint
+                    // Close window after 2 seconds
                     setTimeout(() => {
-                        if (!printWindow.closed) {
-                            printWindow.close();
-                            if (callback) callback(true);
-                        }
-                    }, 8000); // Increased timeout for slower printers
-                    
+                        printWindow.close();
+                        if (callback) callback(true);
+                    }, 2000);
                 } catch (printError) {
                     console.error('Print error:', printError);
                     printWindow.close();
                     if (callback) callback(false);
                 }
-            }, 800); // Increased delay for better reliability
+            }, 800);
         };
-        
-        // Fallback if onload doesn't fire
-        setTimeout(() => {
-            if (printWindow && !printWindow.closed) {
-                try {
-                    printWindow.print();
-                } catch (e) {
-                    console.error('Fallback print error:', e);
-                }
-            }
-        }, 2000);
         
     } catch (error) {
         console.error('Print window error:', error);
@@ -817,6 +794,7 @@ $('#checkoutForm').on('submit', function(event) {
     
     var formData = new FormData(this);
     formData.append('action', action);
+    formData.append('table_number', tableNumber); // Add table number to form data
 
     // Show processing message
     showNotification('Processing order...');

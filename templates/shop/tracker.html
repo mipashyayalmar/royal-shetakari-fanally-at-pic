@@ -3,44 +3,465 @@
 {% load static %}
 <link href="{% static 'template/all_template.css' %}" rel="stylesheet">
 
+<style>
+/* Modern CSS Variables for consistent theming */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.37);
+    --shadow-hover: 0 15px 35px rgba(31, 38, 135, 0.5);
+    --text-primary: #2d3748;
+    --text-secondary: #4a5568;
+    --border-radius: 20px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animated background */
+body {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    min-height: 100vh;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Glassmorphism container */
+.glass-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    padding: 2rem;
+    margin: 2rem 0;
+    transition: var(--transition);
+    animation: slideInUp 0.8s ease-out;
+}
+
+.glass-container:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Slide in animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Enhanced form styling */
+.tracker-form {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: fadeInLeft 1s ease-out 0.3s both;
+}
+
+.form-title {
+    background: var(--primary-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    animation: bounceIn 1.2s ease-out;
+}
+
+.form-control {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    padding: 15px 20px;
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    transition: var(--transition);
+    margin-bottom: 1rem;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.form-control::placeholder {
+    color: rgba(45, 55, 72, 0.7);
+}
+
+/* Animated button */
+.btn-tracker {
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 15px;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-tracker:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-tracker:active {
+    transform: translateY(-1px);
+}
+
+.btn-tracker::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-tracker:hover::before {
+    left: 100%;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: none;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced list styling */
+.status-list {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.list-group-item {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 20px !important;
+    color: var(--text-primary) !important;
+    transition: var(--transition) !important;
+    animation: slideInRight 0.5s ease-out;
+}
+
+.list-group-item:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateX(10px);
+}
+
+.list-group-item:last-child {
+    border-bottom: none !important;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Badge styling */
+.badge {
+    background: var(--success-gradient) !important;
+    color: white !important;
+    padding: 8px 15px !important;
+    border-radius: 20px !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Section headers */
+.section-header {
+    background: var(--secondary-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+    font-size: 2rem;
+    margin: 2rem 0 1rem 0;
+    text-align: center;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Total bill styling */
+.total-bill {
+    background: var(--success-gradient);
+    color: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    margin: 2rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-soft);
+    animation: bounceIn 1s ease-out;
+}
+
+/* Payment methods grid */
+.payment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 1rem 0;
+}
+
+.payment-item {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    transition: var(--transition);
+    animation: scaleIn 0.5s ease-out;
+}
+
+.payment-item:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Login alert styling */
+.login-alert {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    padding: 3rem;
+    text-align: center;
+    animation: slideInUp 0.8s ease-out;
+}
+
+.login-alert a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.login-alert a:hover {
+    color: #764ba2;
+    text-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
+/* Footer enhancement */
+.footer {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    margin-top: 4rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .form-title {
+        font-size: 2rem;
+    }
+    
+    .glass-container {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .payment-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-gradient);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-gradient);
+}
+</style>
 
 {% block body %}
 {% if user.is_authenticated %}
-<div class="container" style="margin-top: 120px; height:78%;
-">
-    <div class="col my-4">
-        <h2>Enter your Order Id to track your order</h2>
-        <form method="post" action="#" id="trackerForm">{% csrf_token %}
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    <b><label for="orderId">Order Id: </label></b>
-                    <input type="number" class="form-control" id="orderId" name="orderId" placeholder="Order Id" required>
+<div class="container" style="margin-top: 120px; min-height: 78%;">
+    <div class="glass-container">
+        <h1 class="form-title">🚚 Track Your Order</h1>
+        <div class="tracker-form">
+            <form method="post" action="#" id="trackerForm">{% csrf_token %}
+                <div class="form-row">
+                    <div class="form-group col-md-8 mx-auto">
+                        <label for="orderId" style="color: var(--text-primary); font-weight: 600; margin-bottom: 10px; display: block;">
+                            📦 Enter Your Order ID
+                        </label>
+                        <input type="number" class="form-control" id="orderId" name="orderId" 
+                               placeholder="e.g., 12345678" required>
+                    </div>
+                    <div class="col-12 text-center">
+                        <button type="submit" class="btn-tracker">
+                            <span class="btn-text">Track My Order</span>
+                        </button>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Track Order</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
+    
+    <div class="loading-spinner" id="loadingSpinner"></div>
     <div class="col my-4" id="mydiv"></div>
 </div>
 {% else %}
-<div id="cont2">
-    <div class="alert alert-info">
-        <font style="font-size:22px"><center>Before tracking your order you need to <strong><a class="alert-link" data-toggle="modal" data-target="#loginModal">Login</a></strong></center></font>
+<div class="container" style="margin-top: 120px; min-height: 78%;">
+    <div class="login-alert">
+        <h2 style="color: var(--text-primary); margin-bottom: 2rem;">🔐 Authentication Required</h2>
+        <p style="font-size: 1.3rem; color: var(--text-secondary);">
+            Before tracking your order, you need to 
+            <strong><a data-toggle="modal" data-target="#loginModal">Login to Your Account</a></strong>
+        </p>
     </div>
 </div>
 {% endif %}
 
-</div>
-</div>
 <div class="footer bg-primary text-light" style="width: 100%; position: relative; bottom: 0; left: 0;">
-    <p class="text-center py-2 mb-0">Copyright © 2024 Designed by <a href="" target="_blank" rel="noopener noreferrer" class="text-light">@Mipashya</a></p>
-  </div>
+    <p class="text-center py-3 mb-0" style="font-size: 1.1rem;">
+        Copyright © 2024 Designed with ❤️ by 
+        <a href="" target="_blank" rel="noopener noreferrer" class="text-light" style="text-decoration: none; font-weight: 600;">
+            @Mipashya
+        </a>
+    </p>
+</div>
 {% endblock %}
 
 {% block js %}
 <script>
+$(document).ready(function() {
+    // Add staggered animation to form elements
+    $('.form-group').each(function(index) {
+        $(this).css('animation-delay', (index * 0.2) + 's');
+    });
+});
+
 $('#trackerForm').submit(function(event) {
+    event.preventDefault();
+    
+    // Show loading spinner
+    $('#loadingSpinner').fadeIn();
     $('#mydiv').empty();
+    
+    // Add button loading state
+    $('.btn-text').text('Tracking...');
+    $('.btn-tracker').prop('disabled', true);
+    
     var formData = {
         'orderId': $('input[name=orderId]').val(),
         'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
@@ -53,72 +474,172 @@ $('#trackerForm').submit(function(event) {
         encode: true
     })
     .done(function(data) {
+        // Hide loading spinner
+        $('#loadingSpinner').fadeOut();
+        $('.btn-text').text('Track My Order');
+        $('.btn-tracker').prop('disabled', false);
+        
         $('#mydiv').empty();
         data = JSON.parse(data);
 
-        var mydiv = `<div class="my-4">
-                        <h2>Your Order Status</h2>
-                        <ul class="list-group" id="items"></ul>
-                    </div>`;
-        $('#mydiv').append(mydiv);
-
         if (data['status'] == "success") {
-            var updates = data['updates'];
+            // Order Status Section
+            var statusSection = `
+                <div class="glass-container">
+                    <h2 class="section-header">📊 Order Status Timeline</h2>
+                    <ul class="list-group status-list" id="items"></ul>
+                </div>
+            `;
+            $('#mydiv').append(statusSection);
 
-            var orderDetails = `<div class="my-4">
-                                <h2>Your Order Details</h2>
-                                <ul class="list-group" id="citems"></ul>
-                            </div>`;
+            // Order Details Section
+            var orderDetails = `
+                <div class="glass-container">
+                    <h2 class="section-header">📋 Order Details</h2>
+                    <ul class="list-group status-list" id="citems"></ul>
+                </div>
+            `;
             $('#mydiv').append(orderDetails);
 
-            // Display order updates
-            for (var i = 0; i < updates.length; i++) {
-                let text = updates[i]['text'];
-                let time = updates[i]['time'];
-                var s = new Date(time).toLocaleString(undefined, {timeZone: 'Asia/Kolkata'}); 
-                var mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">${text}<span class="badge badge-primary badge-pill">${s}</span></li>`;
-                $('#items').append(mystr);
-            }
+            // Display order updates with staggered animation
+            var updates = data['updates'];
+            updates.forEach(function(update, index) {
+                setTimeout(function() {
+                    let text = update['text'];
+                    let time = update['time'];
+                    var s = new Date(time).toLocaleString(undefined, {timeZone: 'Asia/Kolkata'}); 
+                    var statusIcon = getStatusIcon(text);
+                    var mystr = `
+                        <li class="list-group-item d-flex justify-content-between align-items-center" 
+                            style="animation-delay: ${index * 0.1}s">
+                            ${statusIcon} ${text}
+                            <span class="badge">${s}</span>
+                        </li>
+                    `;
+                    $('#items').append(mystr);
+                }, index * 200);
+            });
 
-            // Fill products details and total bill
+            // Fill products details with animation
             var cart = JSON.parse(data['itemsJson']);
             var totalBill = 0;
+            var itemIndex = 0;
+            
             for (var item in cart) {
-                let name = cart[item][1];
-                let qty = cart[item][0];
-                let price = cart[item][2]; // Assuming price is part of itemsJson
-                totalBill += price * qty; // Calculate total bill
-                var mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">${name}<span class="badge badge-primary badge-pill">${qty}</span></li>`;
-                $('#citems').append(mystr);
+                setTimeout(function(currentItem) {
+                    let name = cart[currentItem][1];
+                    let qty = cart[currentItem][0];
+                    let price = cart[currentItem][2] || 0;
+                    totalBill += price * qty;
+                    
+                    var productIcon = '🛍️';
+                    var mystr = `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            ${productIcon} ${name}
+                            <span class="badge">Qty: ${qty}</span>
+                        </li>
+                    `;
+                    $('#citems').append(mystr);
+                    
+                    // Add total bill after last item
+                    if (currentItem === Object.keys(cart)[Object.keys(cart).length - 1]) {
+                        setTimeout(function() {
+                            var totalBillDiv = `
+                                <div class="total-bill">
+                                    💰 Total Amount: ₹${totalBill.toFixed(2)}
+                                </div>
+                            `;
+                            $('#mydiv').append(totalBillDiv);
+                        }, 300);
+                    }
+                }, itemIndex * 150, item);
+                itemIndex++;
             }
 
-            // Display total bill
-            var totalBillDiv = `<div class="my-4"><h3>Total Bill: Rs. ${totalBill.toFixed(2)} /-</h3></div>`;
-            $('#mydiv').append(totalBillDiv);
+            // Payment Methods Section
+            setTimeout(function() {
+                var paymentMethodsDiv = `
+                    <div class="glass-container">
+                        <h2 class="section-header">💳 Available Payment Methods</h2>
+                        <div class="payment-grid">
+                            <div class="payment-item">
+                                <div style="font-size: 2rem; margin-bottom: 10px;">💳</div>
+                                <div>Credit/Debit Card</div>
+                            </div>
+                            <div class="payment-item">
+                                <div style="font-size: 2rem; margin-bottom: 10px;">🏦</div>
+                                <div>Net Banking</div>
+                            </div>
+                            <div class="payment-item">
+                                <div style="font-size: 2rem; margin-bottom: 10px;">📱</div>
+                                <div>UPI Payment</div>
+                            </div>
+                            <div class="payment-item">
+                                <div style="font-size: 2rem; margin-bottom: 10px;">💵</div>
+                                <div>Cash on Delivery</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#mydiv').append(paymentMethodsDiv);
+            }, 1000);
 
-            // Display payment methods
-            var paymentMethodsDiv = `<div class="my-4"><h3>Payment Methods</h3>
-                                        <ul class="list-group">
-                                            <li class="list-group-item">Credit/Debit Card</li>
-                                            <li class="list-group-item">Net Banking</li>
-                                            <li class="list-group-item">UPI</li>
-                                            <li class="list-group-item">Cash on Delivery</li>
-                                        </ul>
-                                      </div>`;
-            $('#mydiv').append(paymentMethodsDiv);
-
+        } else if (data['status'] == "Invalid") {
+            var errorDiv = `
+                <div class="glass-container">
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">❌</div>
+                        <h3 style="color: #e53e3e; margin-bottom: 1rem;">Invalid Order ID</h3>
+                        <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                            The order ID you entered is not valid. Please check and try again.
+                        </p>
+                    </div>
+                </div>
+            `;
+            $('#mydiv').append(errorDiv);
+        } else {
+            var errorDiv = `
+                <div class="glass-container">
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">🔍</div>
+                        <h3 style="color: #d69e2e; margin-bottom: 1rem;">Order Not Found</h3>
+                        <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                            We couldn't find your order. Please verify your Order ID and try again.
+                        </p>
+                    </div>
+                </div>
+            `;
+            $('#mydiv').append(errorDiv);
         }
-        else if (data['status'] == "Invalid") {
-            alert("Your order ID is invalid.");
-            var mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">Your Order ID is Invalid</li>`;
-            $('#items').append(mystr);
-        }
-        else {
-            var mystr = `<li class="list-group-item d-flex justify-content-between align-items-center">Sorry, we are not able to fetch this order ID. Make sure to type the correct Order ID.</li>`;
-            $('#items').append(mystr);
-        }
+    })
+    .fail(function() {
+        $('#loadingSpinner').fadeOut();
+        $('.btn-text').text('Track My Order');
+        $('.btn-tracker').prop('disabled', false);
+        
+        var errorDiv = `
+            <div class="glass-container">
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+                    <h3 style="color: #e53e3e; margin-bottom: 1rem;">Connection Error</h3>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                        Unable to connect to the server. Please try again later.
+                    </p>
+                </div>
+            </div>
+        `;
+        $('#mydiv').append(errorDiv);
     });
-    event.preventDefault();
 });
+
+function getStatusIcon(status) {
+    const statusText = status.toLowerCase();
+    if (statusText.includes('placed') || statusText.includes('confirmed')) return '✅';
+    if (statusText.includes('processing') || statusText.includes('prepared')) return '⚙️';
+    if (statusText.includes('shipped') || statusText.includes('dispatched')) return '🚚';
+    if (statusText.includes('delivered')) return '📦';
+    if (statusText.includes('cancelled')) return '❌';
+    return '📍';
+}
 </script>
 {% endblock %}
